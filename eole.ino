@@ -1,13 +1,21 @@
 #define DEBUG
 
-#define SWITCH 1
+#define PWM_MOTOR OCR2A 
+#define PIN_P_MOT 11    // digital pin (out) : polulu pwm
+#define PWM_SERVO OCR2B 
+#define PIN_P_SER 3     // digital pin (out)
+#define DIR_MOTOR 12    // digital pin (out) : polulu dir
 
-#define PWM_MOTOR OCR2A // digital pin (out)
-#define PWM_SERVO OCR2B // digital pin (out)
-#define DIR_MOTOR 12    // digital pin (out)
-#define POT_MOTOR A4  // analog pin (in)
+#define PIN_SWITCH 1   //digital pin (in) switch
 
-#define SERVO_DEBRAYE 0
+#define POLULU_HIGH 13
+#define POLULU_LOW  10
+
+#define POT_MOTOR A4    // analog pin (in)
+#define POT_GIROU A5    // analog pin (in)
+
+#define SERVO_DEBRAYE   0
+#define SERVO_ENCLANCHE 255
 
 #define DISTANCE_MIN 5
 #define DISTANCE_PLATEAU 10 //Consigne pour arret lent
@@ -23,9 +31,9 @@ unsigned short dist_abs, pos_mot, pos_gir;
 bool flag_servo;
 
 
-void calc_sens() {
+inline void calc_sens() {
 // -1 si sens trigo; 1 si sens horaire; 0 si distance trop faible 
-  sens = (dist_abs < DISTANCE_MIN ? 0 : ( ((dist_abs < 512) ^ (dist < 0)) ? -1 : 0) );
+    sens = (dist_abs < DISTANCE_MIN ? 0 : ( ((dist_abs < 512) ^ (dist < 0)) ? -1 : 0) );
   
   /*
   if (dist_abs < DISTANCE_MIN)
@@ -39,58 +47,51 @@ void calc_sens() {
 }
 
 inline void calc_dist() {
-  dist     = pos_mot - pos_gir;
-  dist_abs = abs(dist);
+    dist     = pos_mot - pos_gir;
+    dist_abs = abs(dist);
 }
 
 
 void control_motor_normal() {
   
 #ifdef DEBUG
-  Serial.print("**Début** pos_gir: "); 
-  Serial.print(pos_gir);
-  Serial.print("pos_mot: "); 
-  Serial.println(pos_mot);
+    Serial.print("**Début Norm** pos_gir: "); Serial.print(pos_gir); Serial.print("pos_mot: "); Serial.println(pos_mot);
 #endif
 
-  // démarrage lent
-  digitalWrite(DIR_MOTOR,LOW);
-  for (unsigned char speed = SPEED_MIN_N; speed < SPEED_MAX_N; speed+=SPEED_STEP){
-    PWM_MOTOR = speed;
-    delay(2);
-  }
-  pos_mot = analogRead(POT_MOTOR);
-  calc_dist();
-
-#ifdef DEBUG
-  Serial.print("**Montée** pos_gir: "); 
-  Serial.print(pos_gir);
-  Serial.print("pos_mot: "); 
-  Serial.println(pos_mot);
-#endif
-
-  // plateau
-  while(dist_abs < DISTANCE_PLATEAU)
-  {
-    PWM_MOTOR = SPEED_MAX_N;
-    delay(10);
+    // démarrage lent
+    digitalWrite(DIR_MOTOR,LOW);
+    for (unsigned char speed = SPEED_MIN_N; speed < SPEED_MAX_N; speed+=SPEED_STEP)
+    {
+        PWM_MOTOR = speed;
+        delay(2);
+    }
     pos_mot = analogRead(POT_MOTOR);
     calc_dist();
-  }
-
-  // arret lent
-  for (unsigned char speed = SPEED_MAX_N; speed >= SPEED_MIN_N; speed-=SPEED_STEP){
-    PWM_MOTOR = speed;
-    delay(2);
-  }
-  PWM_MOTOR = SPEED_MIN_N;
 
 #ifdef DEBUG
-  pos_mot = analogRead(POT_MOTOR);
-  Serial.print("**Fin** pos_gir: "); 
-  Serial.print(pos_gir);
-  Serial.print("pos_mot: "); 
-  Serial.println(pos_mot);
+    Serial.print("**Montée** pos_gir: "); Serial.print(pos_gir); Serial.print("pos_mot: "); Serial.println(pos_mot);
+#endif
+
+    // plateau
+    while(dist_abs < DISTANCE_PLATEAU)
+    {
+        PWM_MOTOR = SPEED_MAX_N;
+        delay(10);
+        pos_mot = analogRead(POT_MOTOR);
+        calc_dist();
+    }
+
+    // arret lent
+    for (unsigned char speed = SPEED_MAX_N; speed >= SPEED_MIN_N; speed-=SPEED_STEP)
+    {
+        PWM_MOTOR = speed;
+        delay(2);
+    }
+    PWM_MOTOR = SPEED_MIN_N;
+
+#ifdef DEBUG
+    pos_mot = analogRead(POT_MOTOR);
+    Serial.print("**Fin** pos_gir: "); Serial.print(pos_gir); Serial.print("pos_mot: "); Serial.println(pos_mot);
 #endif
 }
 
@@ -98,83 +99,103 @@ void control_motor_normal() {
 void control_motor_reverse() {
   
 #ifdef DEBUG
-  Serial.print("**Début** pos_gir: "); 
-  Serial.print(pos_gir);
-  Serial.print("pos_mot: "); 
-  Serial.println(pos_mot);
+    Serial.print("**Début rev** pos_gir: "); Serial.print(pos_gir); Serial.print("pos_mot: "); Serial.println(pos_mot);
 #endif
 
   // démarrage lent
-  digitalWrite(DIR_MOTOR,HIGH);
-  for (unsigned char speed = SPEED_MIN_R; speed >=SPEED_MAX_R; speed-=SPEED_STEP){
-    PWM_MOTOR = speed;
-    delay(2);
-  }
-  pos_mot = analogRead(POT_MOTOR);
-  calc_dist();
+    digitalWrite(DIR_MOTOR,HIGH);
+    for (unsigned char speed = SPEED_MIN_R; speed >=SPEED_MAX_R; speed-=SPEED_STEP)
+    {
+        PWM_MOTOR = speed;
+        delay(2);
+    }
+    pos_mot = analogRead(POT_MOTOR);
+    calc_dist();
 
 #ifdef DEBUG
-  Serial.print("**Montée** pos_gir: "); 
-  Serial.print(pos_gir);
-  Serial.print("pos_mot: "); 
-  Serial.println(pos_mot);
+    Serial.print("**Montée** pos_gir: "); Serial.print(pos_gir);  Serial.print("pos_mot: ");   Serial.println(pos_mot);
 #endif
 
-  // plateau
-  while(dist_abs < DISTANCE_PLATEAU)
-  {
-    PWM_MOTOR = SPEED_MAX_R;
-    delay(10);
-    PWM_MOTOR = analogRead(POT_MOTOR);
-    calc_dist();
-  }
+    // plateau
+    while(dist_abs < DISTANCE_PLATEAU)
+    {
+        PWM_MOTOR = SPEED_MAX_R;
+        delay(10);
+        PWM_MOTOR = analogRead(POT_MOTOR);
+        calc_dist();
+    }
 
-  // arret lent
-  for (unsigned char speed = SPEED_MAX_R; speed < SPEED_MIN_R; speed+=SPEED_STEP){
-    PWM_MOTOR = speed;
-    delay(2);
-  }
-  PWM_MOTOR = SPEED_MIN_R;
+    // arret lent
+    for (unsigned char speed = SPEED_MAX_R; speed < SPEED_MIN_R; speed+=SPEED_STEP)
+    {
+        PWM_MOTOR = speed;
+        delay(2);
+    }
+    PWM_MOTOR = SPEED_MIN_R;
 
 #ifdef DEBUG
-  pos_mot = analogRead(POT_MOTOR);
-  Serial.print("**Fin** pos_gir: "); 
-  Serial.print(pos_gir);
-  Serial.print("pos_mot: "); 
-  Serial.println(pos_mot);
+    pos_mot = analogRead(POT_MOTOR);
+    Serial.print("**Fin** pos_gir: "); 
+    Serial.print(pos_gir);
+    Serial.print("pos_mot: "); 
+    Serial.println(pos_mot);
 #endif
 }
 
 void setup() {
 
-  //Outputs => set 0 to motor 
+    // 4 fils sur polulu, une sur servo, tout en sortie
+    pinMode(PIN_P_MOT  , OUTPUT);
+    pinMode(DIR_MOTOR  , OUTPUT);
+    pinMode(POLULU_LOW , OUTPUT);
+    pinMode(POLULU_HIGH, OUTPUT);
+    pinMode(PIN_P_SER  , OUTPUT);
 
-  //serial
+    pinMode(PIN_SWITCH , INPUT );
+    // pas de config pour in car analog 
 
-  Serial.begin(9600);
-  while (!Serial);
-#ifdef DEBUG
-  Serial.println ("DEBUG EOLE");
+    // init Polulu
+    digitalWrite(DIR_MOTOR  ,LOW );
+    digitalWrite(POLULU_LOW ,LOW );
+    digitalWrite(POLULU_HIGH,HIGH);
+    PWM_MOTOR = SPEED_MIN_N;
+    TCCR2A = 0b10100011; //f pwm= 7kHz
+    TCCR2B = 0b00000010;
+    PWM_MOTOR = SPEED_MIN_N;
+
+    // init servo
+    PWM_SERVO  = SERVO_ENCLANCHE;
+    flag_servo = false;
+
+
+#ifdef DEBUG    
+    Serial.begin(9600);
+    while (!Serial);
+    Serial.println ("DEBUG EOLE");
 #endif
 
 }
 
 void loop() {
 
-  if (digitalRead(SWITCH))
-  {
-    calc_dist();
-    calc_sens();
+    if (digitalRead(PIN_SWITCH))
+    {
+        pos_mot = analogRead(POT_MOTOR);
+        pos_gir = analogRead(POT_GIROU);
+        calc_dist();
+        calc_sens();
     
-    if (sens == -1)
-      control_motor_reverse();
-    else if (sens == 1)   
-      control_motor_normal();
+        if (sens == -1)
+            control_motor_reverse();
+        else if (sens == 1)   
+            control_motor_normal();
 
-    if(flag_servo)
-      PWM_SERVO=SERVO_DEBRAYE;
+        if(flag_servo)
+            PWM_SERVO=SERVO_DEBRAYE;
+    }
 
-  }
 }
+
+
 
 
