@@ -67,7 +67,7 @@ void isr_rotation() {
 
 inline void calc_sens() {
 // -1 si sens trigo; 1 si sens horaire; 0 si distance trop faible 
-    sens = (dist_abs < DISTANCE_MIN ? 0 : ( ((dist_abs < 512) ^ (dist < 0)) ? -1 : 0) ); 
+    sens = (dist_abs < DISTANCE_MIN ? 0 : ( ((dist_abs < 512) ^ (dist < 0)) ? -1 : 1) ); 
 }
 
 inline void calc_dist() {
