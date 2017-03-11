@@ -24,6 +24,8 @@
 #define SPEED_MIN_R 255
 #define SPEED_MAX_R 0
 #define SPEED_STEP  2
+#define OFFSET_MOTOR 0
+#define OFFSET_GIROU 0
 
 char sens;
 short dist;
@@ -41,7 +43,6 @@ inline void calc_dist() {
     dist_abs = abs(dist);
 }
 
-
 void control_motor_normal() {
   
 #ifdef DEBUG
@@ -55,7 +56,7 @@ void control_motor_normal() {
         PWM_MOTOR = speed;
         delay(2);
     }
-    pos_mot = analogRead(POT_MOTOR);
+    pos_mot = (analogRead(POT_MOTOR)+OFFSET_MOTOR)&1023;
     calc_dist();
 
 #ifdef DEBUG
@@ -67,7 +68,7 @@ void control_motor_normal() {
     {
         PWM_MOTOR = SPEED_MAX_N;
         delay(10);
-        pos_mot = analogRead(POT_MOTOR);
+        pos_mot = (analogRead(POT_MOTOR)+OFFSET_MOTOR)&1023;
         calc_dist();
     }
 
@@ -80,7 +81,7 @@ void control_motor_normal() {
     PWM_MOTOR = SPEED_MIN_N;
 
 #ifdef DEBUG
-    pos_mot = analogRead(POT_MOTOR);
+    pos_mot = (analogRead(POT_MOTOR)+OFFSET_MOTOR)&1023;
     Serial.print("**Fin** pos_gir: "); Serial.print(pos_gir); Serial.print("pos_mot: "); Serial.println(pos_mot);
 #endif
 }
@@ -99,7 +100,7 @@ void control_motor_reverse() {
         PWM_MOTOR = speed;
         delay(2);
     }
-    pos_mot = analogRead(POT_MOTOR);
+    pos_mot = (analogRead(POT_MOTOR)+OFFSET_MOTOR)&1023;
     calc_dist();
 
 #ifdef DEBUG
@@ -111,7 +112,7 @@ void control_motor_reverse() {
     {
         PWM_MOTOR = SPEED_MAX_R;
         delay(10);
-        PWM_MOTOR = analogRead(POT_MOTOR);
+        PWM_MOTOR = (analogRead(POT_MOTOR)+OFFSET_MOTOR)&1023;
         calc_dist();
     }
 
@@ -124,7 +125,7 @@ void control_motor_reverse() {
     PWM_MOTOR = SPEED_MIN_R;
 
 #ifdef DEBUG
-    pos_mot = analogRead(POT_MOTOR);
+    pos_mot = (analogRead(POT_MOTOR)+OFFSET_MOTOR)&1023;
     Serial.print("**Fin** pos_gir: "); 
     Serial.print(pos_gir);
     Serial.print("pos_mot: "); 
@@ -170,8 +171,8 @@ void loop() {
 
     if (digitalRead(PIN_SWITCH))
     {
-        pos_mot = analogRead(POT_MOTOR);
-        pos_gir = analogRead(POT_GIROU);
+        pos_mot = (analogRead(POT_MOTOR)+OFFSET_MOTOR)&1023;
+        pos_gir = (analogRead(POT_GIROU)+OFFSET_GIROU)&1023;
         calc_dist();
         calc_sens();
     
