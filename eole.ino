@@ -2,49 +2,49 @@
 
 #define DEBUG
 
-#define PWM_MOTOR OCR2A 
+#define PWM_MOTOR OCR2A //correspond to pin11
 #define PIN_P_MOT 11    // digital pin (out) : polulu pwm
-#define PWM_SERVO OCR2B 
-#define PIN_P_SER 3     // digital pin (out)
+#define PWM_SERVO OCR2B // correspond to pin3
+#define PIN_P_SER 3     // digital pin (out) : servo
 #define DIR_MOTOR 12    // digital pin (out) : polulu dir
+#define POLULU_HIGH 13  // digital pin (out) : polulu XXX
+#define POLULU_LOW  10  // digital pin (out) : polulu XXX
 
 #define PIN_SWITCH 1    // digital pin (in) switch
 #define PIN_ANEMO  2    // digital pin (in) anemometer
 
-#define POLULU_HIGH 13
-#define POLULU_LOW  10
-
 #define POT_MOTOR A4    // analog pin (in)
 #define POT_GIROU A5    // analog pin (in)
 
-#define SERVO_DEBRAYE   0
+#define SERVO_DEBRAYE   0    // position servo
 #define SERVO_ENCLANCHE 255
 
-#define DISTANCE_MIN 5
-#define DISTANCE_PLATEAU 10 //Consigne pour arret lent
-#define SPEED_MIN_N 0
+#define DISTANCE_MIN 5      // consigne démarrage asservisement
+#define DISTANCE_PLATEAU 10 // consigne pour arret lent
+#define SPEED_MIN_N 0 
 #define SPEED_MAX_N 255
 #define SPEED_MIN_R 255
 #define SPEED_MAX_R 0
 #define SPEED_STEP  2
 #define OFFSET_MOTOR 0
 #define OFFSET_GIROU 0
+
 #define ROT_MAX 50
 #define DEBOUNCE_MS 10 
 
-char sens;
+char  sens;
 short dist;
 unsigned short dist_abs, pos_mot, pos_gir;
 
-volatile bool flag_servo;
-volatile unsigned int rotation;
-volatile unsigned int timer_count; 
+volatile bool          flag_servo;
+volatile unsigned int  rotation;
+volatile unsigned int  timer_count; 
 volatile unsigned long debounce;
 
 // interruption Timer1
 void isr_timer() {
-    timer_count++; //toutes les 0.5s
-    if(timer_count == 10) // Toutes les 5s
+    timer_count++; // toutes les 0.5s
+    if(timer_count == 10) 
     {
 #ifdef DEBUG    
         Serial.print ("rotation value: "); Serial.println(rotation);
@@ -58,18 +58,18 @@ void isr_timer() {
 
 // interruption rotation anemo
 void isr_rotation() {
-    if((millis() - debounce) > DEBOUNCE_MS ) { // debounce the switch contact.
+    if((millis() - debounce) > DEBOUNCE_MS ) { // debounce du capteur ?
         rotation++;
         debounce = millis();
     }
 }
 
-
-inline void calc_sens() {
 // -1 si sens trigo; 1 si sens horaire; 0 si distance trop faible 
+inline void calc_sens() {
     sens = (dist_abs < DISTANCE_MIN ? 0 : ( ((dist_abs < 512) ^ (dist < 0)) ? -1 : 1) ); 
 }
 
+// /!\ ne met pas à jour les positions
 inline void calc_dist() {
     dist     = pos_mot - pos_gir;
     dist_abs = abs(dist);
@@ -125,7 +125,7 @@ void control_motor_reverse() {
     Serial.print("**Début rev** pos_gir: "); Serial.print(pos_gir); Serial.print("pos_mot: "); Serial.println(pos_mot);
 #endif
 
-  // démarrage lent
+    // démarrage lent
     digitalWrite(DIR_MOTOR,HIGH);
     for (unsigned char speed = SPEED_MIN_R; speed >=SPEED_MAX_R; speed-=SPEED_STEP)
     {
@@ -223,9 +223,4 @@ void loop() {
         if(flag_servo)
             PWM_SERVO=SERVO_DEBRAYE;
     }
-
 }
-
-
-
-
